@@ -7,6 +7,17 @@ class ServerException(Exception):
 
 class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
+    #how to display a directory
+    Listing = '''\
+    <html>
+    <body>
+    <ul>
+    %s
+    </ul>
+    </body>
+    </html>
+    '''
+
     # How to display an error.
     Error_Page = """\
     <html>
@@ -25,6 +36,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             # it is a file 
             elif os.path.isfile(full_path):
                 self.handle_file(full_path)
+            
+	    elif os.path.isdir(full_path):
+                self.list_dir(full_path)
             # the path that program can not handle 
             else:
                 raise ServerException("Unknown Object '%s'" % self.path)
@@ -46,7 +60,18 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                                      'msg'  : msg
                                     }
         self.send_content(content)
-
+    
+    def list_dir(self,full_path):
+        try:
+            entries = os.listdir(full_path)
+            bullets = ['<li>%s</li>' % e for e in entries if not e.startswith('.')]
+            print bullets
+            page = self.Listing % '\n'.join(bullets)
+            self.send_content(page)
+        except OSError,msg:
+            msg = "'%s' cannot be listed: %s" % (self.path, msg)
+            self.handle_error(msg)
+        
     def send_content(self,content):
         self.send_response(200)
         self.send_header("Content-type","text/html")
