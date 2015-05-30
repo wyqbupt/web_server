@@ -18,27 +18,27 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     """
 
     def do_GET(self):
-	try:
-	    full_path = os.getcwd() + self.path
-	    if not os.path.exists(full_path):
-		raise ServerException("'%s' not found" % self.path)
-	    # it is a file 
-	    elif os.path.isfile(full_path):
-		self.handle_file(full_path)
-	    # the path that program can not handle 
-	    else:
-		raise ServerException("Unknown Object '%s'" % self.path)
-	except Exception,msg:
-	    self.handle_error(msg)
+        try:
+            full_path = os.getcwd() + self.path
+            if not os.path.exists(full_path):
+                raise ServerException("'%s' not found" % self.path)
+            # it is a file 
+            elif os.path.isfile(full_path):
+                self.handle_file(full_path)
+            # the path that program can not handle 
+            else:
+                raise ServerException("Unknown Object '%s'" % self.path)
+        except Exception,msg:
+            self.handle_error(msg)
     
     def handle_file(self,full_path):
-	try:
-	    with open(full_path,'r') as input:
-		content = input.read()
-	    self.send_content(content)
-	except IOError,msg:
-	    msg = "'%s' can not be read '%s'" % (self.path,msg)
-	    self.handle_error(msg)
+        try:
+            with open(full_path,'r') as input:
+                content = input.read()
+            self.send_content(content)
+        except IOError,msg:
+            msg = "'%s' can not be read '%s'" % (self.path,msg)
+            self.handle_error(msg)
 
     def handle_error(self,msg):
         content = self.Error_Page % {
