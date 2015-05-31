@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import sys,os,BaseHTTPServer
+import sys,os,BaseHTTPServer,mimetypes
 
 class ServerException(Exception):
     '''For internal error reporting.'''
@@ -26,6 +26,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     </body>
     </html>
     """
+
+    #MIME types of files,a dictionary
+    File_Types = mimetypes.types_map
 
     def do_GET(self):
         #Create log 
@@ -73,12 +76,24 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def is_parent_dir(self,left,right):
 	return os.path.commonprefix([left,right]) == left
 
+    def guess_file_type(self,path):
+        #ext can fetch Extension name
+	base,ext = os.path.splitext(path)
+	if ext in self.File_Types:
+	    return self.File_Types[ext]
+	#make ext to lower case to do search again
+	ext = ext.lower()
+	if ext in self.File_Types:
+	    return self.File_Types[ext]
+	return self.File_Types['']
+
     def handle_file(self,abs_path):
         try:
-            input = open(abs_path,'r')
+            input = open(abs_path,"rb")
             content = input.read()
 	    input.close()
-            self.send_content(content)
+	    fileType = self.guess_file_type(abs_path)
+            self.send_content(content,fileType)
         except IOError,msg:
             msg = "'%s' can not be read '%s'" % (self.path,msg)
             self.err_no_perm(msg)
@@ -97,10 +112,12 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             msg = "'%s' cannot be listed: %s" % (self.path, msg)
             self.send_error(self.ERR_NO_PERMIT,msg)
     
-    def send_content(self,content):
+    def send_content(self,content,fileType="text/html"):
+	length = str(len(content))
+	self.log("sending content, fileType '%s', length %s" % (fileType, length))
         self.send_response(200)
-        self.send_header("Content-type","text/html")
-        self.send_header("Content-Length",str(len(content)))
+	self.send_header("Content-type",fileType)
+        self.send_header("Content-Length",length)
         self.end_headers()
         self.wfile.write(content)
     
